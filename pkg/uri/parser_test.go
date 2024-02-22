@@ -1,6 +1,8 @@
 package uri_test
 
 import (
+	"bytes"
+	"encoding/json"
 	"errors"
 	"strings"
 	"testing"
@@ -190,5 +192,32 @@ func TestMust(t *testing.T) {
 
 	if !recovered {
 		t.Fatalf("expected parsing to cause a panic, it didnt")
+	}
+}
+
+func TestURI_MarshalJSON(t *testing.T) {
+	u := uri.Must(uri.Parse("lakefs://foo/bar/baz"))
+	data, err := json.Marshal(struct {
+		LakefsURI *uri.URI `json:"uri"`
+	}{LakefsURI: u})
+	if err != nil {
+		t.Fatalf("unexpected error marshaling: %v", err)
+	}
+	if !bytes.Equal(data, []byte(`{"uri":"lakefs://foo/bar/baz"}`)) {
+		t.Fatalf("unexpected JSON returned (got\n%s\n)\n", data)
+	}
+}
+
+func TestURI_UnmarshalJSON(t *testing.T) {
+	type testStruct struct {
+		LakefsURI *uri.URI `json:"uri"`
+	}
+	ts := testStruct{}
+	err := json.Unmarshal([]byte(`{"uri":"lakefs://foo/bar/baz"}`), &ts)
+	if err != nil {
+		t.Fatalf("unexpected error unmarshaling: %v", err)
+	}
+	if ts.LakefsURI.String() != "lakefs://foo/bar/baz" {
+		t.Fatalf("unexpected uri returned (got\n%s\n)\n", ts.LakefsURI)
 	}
 }

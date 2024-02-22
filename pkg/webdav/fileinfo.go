@@ -1,10 +1,13 @@
 package webdav
 
 import (
+	"context"
 	"io/fs"
 	"os"
 	"path"
 	"time"
+
+	"golang.org/x/net/webdav"
 
 	"github.com/go-openapi/swag"
 	"github.com/treeverse/lakefs/pkg/uri"
@@ -47,6 +50,14 @@ func (fi *lakeFSFileInfo) IsDir() bool {
 	return fi.dir
 }
 
+func (fi *lakeFSFileInfo) ETag(ctx context.Context) (string, error) {
+	if fi.stat != nil {
+		return fi.stat.Checksum, nil
+	}
+	return "", webdav.ErrNotImplemented
+}
+
 func (fi *lakeFSFileInfo) Sys() any {
+	webdav.NewMemFS()
 	return fi.stat
 }

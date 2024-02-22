@@ -1,10 +1,13 @@
 package uri
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"net/url"
 	"strings"
+
+	"gopkg.in/yaml.v3"
 
 	"github.com/treeverse/lakefs/pkg/validator"
 )
@@ -154,6 +157,45 @@ func (u *URI) String() string {
 	buf.WriteString(PathSeparator)
 	buf.WriteString(*u.Path)
 	return buf.String()
+}
+
+func (u *URI) UnmarshalYAML(value *yaml.Node) error {
+	var s string
+	err := value.Decode(&s)
+	if err != nil {
+		return err
+	}
+	parsed, err := Parse(s)
+	if err != nil {
+		return err
+	}
+	u.Ref = parsed.Ref
+	u.Repository = parsed.Repository
+	u.Path = parsed.Path
+	return nil
+}
+
+func (u *URI) MarshalYAML() (interface{}, error) {
+	return u.String(), nil
+}
+
+func (u *URI) MarshalJSON() ([]byte, error) {
+	return json.Marshal(u.String())
+}
+
+func (u *URI) UnmarshalJSON(data []byte) error {
+	var s string
+	if err := json.Unmarshal(data, &s); err != nil {
+		return err
+	}
+	parsed, err := Parse(s)
+	if err != nil {
+		return err
+	}
+	u.Ref = parsed.Ref
+	u.Repository = parsed.Repository
+	u.Path = parsed.Path
+	return nil
 }
 
 // ParseWithBaseURI parse URI uses base URI as prefix when set and input doesn't start with lakeFS protocol
