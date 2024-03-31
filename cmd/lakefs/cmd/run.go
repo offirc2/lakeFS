@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"net"
 	"net/http"
 	"net/url"
 	"os"
@@ -42,6 +43,8 @@ import (
 	"github.com/treeverse/lakefs/pkg/kv/mem"
 	_ "github.com/treeverse/lakefs/pkg/kv/postgres"
 	"github.com/treeverse/lakefs/pkg/logging"
+	"github.com/treeverse/lakefs/pkg/redis"
+	"github.com/treeverse/lakefs/pkg/resp"
 	"github.com/treeverse/lakefs/pkg/stats"
 	"github.com/treeverse/lakefs/pkg/upload"
 	"github.com/treeverse/lakefs/pkg/version"
@@ -343,6 +346,24 @@ var runCmd = &cobra.Command{
 			}),
 		}
 
+		redisLogger := logger.
+			WithField("listen_addr", "0.0.0.0:6379").
+			WithField("app", "redis_server")
+		redisListener, err := net.Listen("tcp", "0.0.0.0:6379")
+		if err != nil {
+			redisLogger.WithError(err).Fatal("could not start redis server")
+		}
+		redisLogger.Info("redis server started")
+
+		// redis router
+		redisServer := resp.NewServer(redisListener, redis.Commands(c.Store, redisLogger))
+		go func() {
+			err = redisServer.Run()
+			if err != nil {
+				panic(err)
+			}
+		}()
+
 		actionsService.SetEndpoint(server)
 
 		go func() {
@@ -379,7 +400,7 @@ var runCmd = &cobra.Command{
 			os.Exit(1)
 		}
 		printWelcome(os.Stderr, buf.String())
-		gracefulShutdown(ctx, server)
+		gracefulShutdown(ctx, server, redisServer)
 	},
 }
 

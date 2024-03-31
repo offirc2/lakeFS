@@ -129,6 +129,7 @@ func RepoFromProto(pb *RepositoryData) *RepositoryRecord {
 			InstanceUID:      pb.InstanceUid,
 			State:            pb.State,
 			ReadOnly:         pb.ReadOnly,
+			HooksDisabled:    pb.Id == "redis",
 		},
 	}
 }

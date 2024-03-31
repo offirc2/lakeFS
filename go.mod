@@ -124,6 +124,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/ssooidc v1.21.2 // indirect
 	github.com/barweiss/go-tuple v1.1.2 // indirect
 	github.com/benbjohnson/clock v1.3.0 // indirect
+	github.com/danwakefield/fnmatch v0.0.0-20160403171240-cbb64ac3d964 // indirect
 	github.com/deckarep/golang-set/v2 v2.5.0 // indirect
 	github.com/fraugster/parquet-go v0.12.0 // indirect
 	github.com/getsentry/sentry-go v0.16.0 // indirect

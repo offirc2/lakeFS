@@ -275,6 +275,8 @@ type Repository struct {
 	// ReadOnly indicates if the repository is a read-only repository. All write operations will be blocked for a
 	// read-only repository.
 	ReadOnly bool
+	// HooksDisabled returns true for repositories that don't run any hooks of any kind
+	HooksDisabled bool
 }
 
 type RepositoryMetadata map[string]string
@@ -1199,7 +1201,7 @@ func (g *Graveler) CreateBranch(ctx context.Context, repository *RepositoryRecor
 	}
 	storageNamespace := repository.StorageNamespace
 	var preRunID string
-	if !repository.ReadOnly {
+	if !repository.ReadOnly && !repository.HooksDisabled {
 		preRunID = g.hooks.NewRunID()
 		err = g.hooks.PreCreateBranchHook(ctx, HookRecord{
 			RunID:            preRunID,
@@ -1223,7 +1225,7 @@ func (g *Graveler) CreateBranch(ctx context.Context, repository *RepositoryRecor
 	if err != nil {
 		return nil, fmt.Errorf("set branch '%s' to '%v': %w", branchID, newBranch, err)
 	}
-	if !repository.ReadOnly {
+	if !repository.ReadOnly && !repository.HooksDisabled {
 		postRunID := g.hooks.NewRunID()
 		g.hooks.PostCreateBranchHook(ctx, HookRecord{
 			RunID:            postRunID,
@@ -1358,7 +1360,7 @@ func (g *Graveler) CreateTag(ctx context.Context, repository *RepositoryRecord, 
 
 	var preRunID string
 
-	if !repository.ReadOnly {
+	if !repository.ReadOnly && !repository.HooksDisabled {
 		preRunID = g.hooks.NewRunID()
 		err = g.hooks.PreCreateTagHook(ctx, HookRecord{
 			RunID:            preRunID,
@@ -1382,7 +1384,7 @@ func (g *Graveler) CreateTag(ctx context.Context, repository *RepositoryRecord, 
 		return err
 	}
 
-	if !repository.ReadOnly {
+	if !repository.ReadOnly && !repository.HooksDisabled {
 		postRunID := g.hooks.NewRunID()
 		g.hooks.PostCreateTagHook(ctx, HookRecord{
 			RunID:            postRunID,
@@ -1416,7 +1418,7 @@ func (g *Graveler) DeleteTag(ctx context.Context, repository *RepositoryRecord, 
 	}
 
 	var preRunID string
-	if !repository.ReadOnly {
+	if !repository.ReadOnly && !repository.HooksDisabled {
 		preRunID = g.hooks.NewRunID()
 		err = g.hooks.PreDeleteTagHook(ctx, HookRecord{
 			RunID:            preRunID,
@@ -1441,7 +1443,7 @@ func (g *Graveler) DeleteTag(ctx context.Context, repository *RepositoryRecord, 
 		return err
 	}
 
-	if !repository.ReadOnly {
+	if !repository.ReadOnly && !repository.HooksDisabled {
 		postRunID := g.hooks.NewRunID()
 		g.hooks.PostDeleteTagHook(ctx, HookRecord{
 			RunID:            postRunID,
@@ -1504,7 +1506,7 @@ func (g *Graveler) DeleteBranch(ctx context.Context, repository *RepositoryRecor
 	commitID := branch.CommitID
 	storageNamespace := repository.StorageNamespace
 	var preRunID string
-	if !repository.ReadOnly {
+	if !repository.ReadOnly && !repository.HooksDisabled {
 		preRunID = g.hooks.NewRunID()
 		preHookRecord := HookRecord{
 			RunID:            preRunID,
@@ -1534,7 +1536,7 @@ func (g *Graveler) DeleteBranch(ctx context.Context, repository *RepositoryRecor
 	tokens = append(tokens, branch.StagingToken)
 	g.dropTokens(ctx, tokens...)
 
-	if !repository.ReadOnly {
+	if !repository.ReadOnly && !repository.HooksDisabled {
 		postRunID := g.hooks.NewRunID()
 		g.hooks.PostDeleteBranchHook(ctx, HookRecord{
 			RunID:            postRunID,
@@ -2015,7 +2017,7 @@ func (g *Graveler) Commit(ctx context.Context, repository *RepositoryRecord, bra
 			commit.Parents = CommitParents{branch.CommitID}
 		}
 
-		if !repository.ReadOnly {
+		if !repository.ReadOnly && !repository.HooksDisabled {
 			preRunID = g.hooks.NewRunID()
 			err = g.hooks.PreCommitHook(ctx, HookRecord{
 				RunID:            preRunID,
@@ -2085,7 +2087,7 @@ func (g *Graveler) Commit(ctx context.Context, repository *RepositoryRecord, bra
 
 	g.dropTokens(ctx, sealedToDrop...)
 
-	if !repository.ReadOnly {
+	if !repository.ReadOnly && !repository.HooksDisabled {
 		postRunID := g.hooks.NewRunID()
 		err = g.hooks.PostCommitHook(ctx, HookRecord{
 			EventType:        EventTypePostCommit,
@@ -2808,7 +2810,7 @@ func (g *Graveler) Merge(ctx context.Context, repository *RepositoryRecord, dest
 		}
 		metadata[MergeStrategyMetadataKey] = mergeStrategyString[mergeStrategy]
 		commit.Metadata = metadata
-		if !repository.ReadOnly {
+		if !repository.ReadOnly && !repository.HooksDisabled {
 			preRunID = g.hooks.NewRunID()
 			err = g.hooks.PreMergeHook(ctx, HookRecord{
 				EventType:        EventTypePreMerge,
@@ -2842,7 +2844,7 @@ func (g *Graveler) Merge(ctx context.Context, repository *RepositoryRecord, dest
 	}
 
 	g.dropTokens(ctx, tokensToDrop...)
-	if !repository.ReadOnly {
+	if !repository.ReadOnly && !repository.HooksDisabled {
 		postRunID := g.hooks.NewRunID()
 		err = g.hooks.PostMergeHook(ctx, HookRecord{
 			EventType:        EventTypePostMerge,
