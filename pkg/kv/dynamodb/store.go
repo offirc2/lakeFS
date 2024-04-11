@@ -241,6 +241,7 @@ func (s *Store) Get(ctx context.Context, partitionKey, key []byte) (*kv.ValueWit
 		if s.isSlowDownErr(err) {
 			s.logger.WithField("partition_key", partitionKey).WithContext(ctx).Error("get item: %w", kv.ErrSlowDown)
 			dynamoSlowdown.WithLabelValues(operation).Inc()
+			err = errors.Join(err, kv.ErrSlowDown)
 		}
 		return nil, fmt.Errorf("get item: %w", err)
 	}
